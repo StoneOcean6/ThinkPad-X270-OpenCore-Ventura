@@ -157,4 +157,37 @@ docs/WHAT-WORKS.md   features, limits, do's and don'ts
 - [nicktimur/Lenovo-X270-Hackintosh-OpenCore-Sonoma](https://github.com/nicktimur/Lenovo-X270-Hackintosh-OpenCore-Sonoma): reference for the X270 graphics setup
 - [Claude](https://claude.ai) by Anthropic: troubleshooting 
 
+## Licenses
+
+This repo bundles work from many projects. **Each component keeps its own license**, and the full source code is available at the links below. The kexts and OpenCore binaries come from the projects' releases and haven't been modified here. The one exception is `itlwm.kext/Contents/Info.plist`, where the saved Wi-Fi entries were cleared.
+
+| Component | License | Source |
+|---|---|---|
+| OpenCore (OpenCore.efi, BOOTx64.efi, OpenRuntime.efi, OpenShell.efi) | BSD-3-Clause | [acidanthera/OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) |
+| HfsPlus.efi | Apple proprietary driver, distributed via OcBinaryData | [acidanthera/OcBinaryData](https://github.com/acidanthera/OcBinaryData) |
+| Lilu | BSD-3-Clause | [acidanthera/Lilu](https://github.com/acidanthera/Lilu) |
+| VirtualSMC + plugins (SMCBatteryManager, SMCProcessor, SMCSuperIO, SMCLightSensor, SMCDellSensors) | BSD-3-Clause | [acidanthera/VirtualSMC](https://github.com/acidanthera/VirtualSMC) |
+| WhateverGreen | BSD-3-Clause | [acidanthera/WhateverGreen](https://github.com/acidanthera/WhateverGreen) |
+| AppleALC | BSD-3-Clause | [acidanthera/AppleALC](https://github.com/acidanthera/AppleALC) |
+| NVMeFix | BSD-3-Clause | [acidanthera/NVMeFix](https://github.com/acidanthera/NVMeFix) |
+| RestrictEvents | BSD-3-Clause | [acidanthera/RestrictEvents](https://github.com/acidanthera/RestrictEvents) |
+| HibernationFixup | BSD-3-Clause | [acidanthera/HibernationFixup](https://github.com/acidanthera/HibernationFixup) |
+| CPUFriend | BSD-3-Clause | [acidanthera/CPUFriend](https://github.com/acidanthera/CPUFriend) |
+| BrightnessKeys | BSD-3-Clause | [acidanthera/BrightnessKeys](https://github.com/acidanthera/BrightnessKeys) |
+| VoodooPS2Controller (+ Keyboard, Mouse, Trackpad, VoodooInput) | Apple Public Source License 2.0 | [acidanthera/VoodooPS2](https://github.com/acidanthera/VoodooPS2) |
+| ACPIBatteryManager (disabled) | Apple Public Source License 2.0 | [RehabMan/OS-X-ACPI-Battery-Driver](https://github.com/RehabMan/OS-X-ACPI-Battery-Driver) |
+| BlueToolFixup, BrcmPatchRAM3, BrcmFirmwareData | GPL-2.0 | [acidanthera/BrcmPatchRAM](https://github.com/acidanthera/BrcmPatchRAM) |
+| IntelMausi | GPL-2.0 | [acidanthera/IntelMausi](https://github.com/acidanthera/IntelMausi) |
+| AirportItlwm, itlwm | GPL-2.0 | [OpenIntelWireless/itlwm](https://github.com/OpenIntelWireless/itlwm) |
+| IntelBluetoothFirmware, IntelBTPatcher | GPL-3.0 | [OpenIntelWireless/IntelBluetoothFirmware](https://github.com/OpenIntelWireless/IntelBluetoothFirmware) |
+| VoodooRMI (+ RMISMBus, RMII2C, VoodooInput) | GPL-2.0 | [VoodooSMBus/VoodooRMI](https://github.com/VoodooSMBus/VoodooRMI) |
+| VoodooSMBus | GPL-2.0 | [VoodooSMBus/VoodooSMBus](https://github.com/VoodooSMBus/VoodooSMBus) |
+| ECEnabler | no license file published; © 1Revenger1 | [1Revenger1/ECEnabler](https://github.com/1Revenger1/ECEnabler) |
+| USBToolBox kext | no license file published; © USBToolBox | [USBToolBox/kext](https://github.com/USBToolBox/kext) |
+| AppleMCEReporterDisabler (plist-only kext) | © 2019 XLNC | |
+| SSDT-PLUG-DRTNIA, SSDT-EC-USBX-LAPTOP, SSDT-PNLF, SSDT-XOSI, SSDT-GPRW | from Dortania's guides (CC BY-NC-SA 4.0) | [Dortania](https://dortania.github.io) |
+| SSDT-BATX | "Copyleft (c) 2020 by bb. No rights reserved." (repo: MIT) | [benbender/x1c6-hackintosh](https://github.com/benbender/x1c6-hackintosh) |
+
+**My own work** (`config.plist`, `SSDT-WAKLED`, the `UTBMap-X270` USB map and the docs) is free to use, modify and share. Credit is appreciated but not required.
+
 Use at your own risk. Not affiliated with Apple or Lenovo.
