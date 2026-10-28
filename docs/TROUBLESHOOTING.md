@@ -8,7 +8,6 @@ These came up after the EFI was finished and published, during normal day-to-day
 | 2 | [Laptop turns itself back on right after shutdown](#2-laptop-turns-itself-back-on-right-after-shutdown) | ✅ solved (EFI fix) |
 | 3 | [Slow after login, typing lag, apps slow to open](#3-slow-after-login-typing-lag-apps-slow-to-open) | 🟡 mostly solved; the drive's heat is still open |
 | 4 | [WhatsApp (Mac App Store) won't reconnect after sleep](#4-whatsapp-mac-app-store-wont-reconnect-after-sleep) | 🔴 under investigation, workaround available |
-| 5 | [Dock magnification doesn't work](#5-dock-magnification-doesnt-work) | ✅ solved (not a hackintosh issue) |
 
 ---
 
@@ -69,7 +68,7 @@ log show --last boot --style compact --predicate 'eventMessage CONTAINS "Previou
 
 ## 3. Slow after login, typing lag, apps slow to open
 
-**Symptom:** the first minutes after login were very slow: apps (including the Claude desktop app) took a long time to open, and at times even typing lagged. Startup up to the login screen was normal (about 20 s from kernel start to the login window).
+**Symptom:** the first minutes after login were very slow: apps took a long time to open, and at times even typing lagged. Startup up to the login screen was normal (about 20 s from kernel start to the login window).
 
 **What the measurements showed**
 - **CPU mostly idle, but a high load average** (~3.9 on a 2-core CPU). Processes were **waiting on the disk**.
@@ -79,10 +78,7 @@ log show --last boot --style compact --predicate 'eventMessage CONTAINS "Previou
 - **The SSD runs hot.** The controller sensor showed 68–69 °C at idle and **75 °C** after a single 1 GB write; the drive's own warning threshold is 70 °C.
 - `log show … | sort | uniq -c` showed the system log being flooded:
   - **WindowServer, ~18,700 lines in 5 min:** almost all `[com.apple.Multitouch:Plugin] … dispatchEvent Dispatching event with N children`, one line per trackpad update (VoodooInput presents the trackpad to macOS as an Apple trackpad).
-  - **Contacts, AddressBookSourceSync, Family:** ~2,000 lines each.
-- `CMFSyncAgent` used up to **77% CPU**, together with `sharingd` (a known Ventura issue with iCloud contacts syncing).
-- **iCloud storage was full** (≈49.8 of 50 GB). With iCloud full, uploads can't finish and the sync services keep retrying.
-- Photos analysis (`photoanalysisd`, `mediaanalysisd`) and Spotlight (`mds`, `mdbulkimport`) were busy after setting up iCloud.
+- Background indexing (Spotlight: `mds`, `mdbulkimport`) adds to the load in the first days after setup.
 
 **Fixes applied**
 1. **Stop saving trackpad debug chatter to the SSD.** It's useless noise. The trackpad and its driver logs are unaffected.
@@ -95,9 +91,8 @@ log show --last boot --style compact --predicate 'eventMessage CONTAINS "Previou
    - Result: `logd` disk writes roughly halved (68 per 5 s → 61 per 10 s) while using the trackpad.
    - Note that `log show` still counts these lines, because it includes messages held in memory. Check `fs_usage … logd` instead.
    - Undo: `sudo rm /Library/Preferences/Logging/Subsystems/com.apple.Multitouch.plist`
-2. **iCloud on the laptop:** turned off **Contacts** ("Keep on My Mac") and **Photos**. Expect a burst of disk work and some lag for 15–30 minutes right after switching them off, while macOS cleans up. Also free up iCloud space (Manage… → remove old device backups) or upgrade the plan.
-3. **Fewer background items** (System Settings → General → Login Items → Allow in the Background): turned off Spotify's helper and Microsoft AutoUpdate (Office 16.101 is the last version for Ventura). Google Drive stays on, set to **Stream files**.
-4. **Let Spotlight finish its first index**, plugged in and awake: `caffeinate -i -t 7200`.
+2. **Keep login light:** check System Settings → General → Login Items (both lists) and switch off background items you don't need at startup. Every extra item competes for this SSD right after login.
+3. **Let Spotlight finish its first index**, plugged in and awake: `caffeinate -i -t 7200`.
 
 **Still open:** **SSD cooling.** Check for, or add, a thermal pad between the SSD and the chassis. Under longer writes the controller passes its 70 °C warning level and throttles.
 
@@ -125,7 +120,7 @@ SSD health needs smartmontools: Homebrew no longer installs on this Intel/Ventur
 - Safari and iMessage work normally after wake.
 - `tcpkeepalive` stays **off** on purpose: turning it on brings back background wakes.
 
-**Theory:** something WhatsApp depends on (but Safari and iMessage don't) gets stuck after a wake, and only a reboot clears it. Not confirmed yet. The iCloud and background changes in section 3 may also affect this.
+**Theory:** something WhatsApp depends on (but Safari and iMessage don't) gets stuck after a wake, and only a reboot clears it. Not confirmed yet. 
 
 **Next time it happens, before restarting:**
 
@@ -148,30 +143,3 @@ SSD health needs smartmontools: Homebrew no longer installs on this Intel/Ventur
    ```
 
 **Workaround:** restart the laptop. WhatsApp Web in Chrome is also unaffected.
-
----
-
-## 5. Dock magnification doesn't work
-
-**Symptom:** hovering over the Dock never enlarges the icons, even with Magnification switched on in System Settings.
-
-**Cause:** this isn't a hackintosh issue. It's the settings themselves:
-```bash
-defaults read com.apple.dock magnification   # 0   = off
-defaults read com.apple.dock tilesize        # 73  = normal icon size
-defaults read com.apple.dock largesize       # 16  = "magnified" size, SMALLER than the icons
-```
-On top of that, **System Settings was open** while the values were changed from Terminal. It still showed the old state, and touching a slider wrote the old values (`magnification 0`, `largesize 16`) back.
-
-**Fix**
-1. Quit System Settings completely with **⌘Q**.
-2. Run:
-   ```bash
-   defaults write com.apple.dock magnification -bool true
-   defaults write com.apple.dock tilesize -int 48
-   defaults write com.apple.dock largesize -int 96
-   killall Dock
-   ```
-3. When fine-tuning in System Settings → Desktop & Dock afterwards, keep the **Magnification** slider clearly to the right of the **Size** slider.
-
-**Tip:** quit System Settings before changing settings from Terminal, and paste each command on its own line. In this case one line got glued onto a leftover `killall Dock`, so `killall` treated `-bool` as one of its own options and the setting was never saved.

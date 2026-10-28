@@ -143,7 +143,7 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
 
 Full details, with the reasoning and how each fix was verified: **[docs/CHANGELOG.md](docs/CHANGELOG.md)**. Do's and don'ts: **[docs/WHAT-WORKS.md](docs/WHAT-WORKS.md)**.
 
-Problems found later in daily use (trackpad after notification wakes, powering on after shutdown, slow after login, WhatsApp after sleep, Dock magnification): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
+Problems found later in daily use (trackpad after notification wakes, powering on after shutdown, slow after login, WhatsApp after sleep): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
 
 ## Repository layout
 
