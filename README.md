@@ -4,8 +4,6 @@ A working OpenCore EFI for the **Core i5-7200U ThinkPad X270** running **macOS V
 
 > ⚠️ **Before you boot with this EFI, generate your own SMBIOS** (see [Before you use it](#before-you-use-it)). The serial numbers in `config.plist` are placeholders, and macOS/iCloud will not work properly until you replace them.
 
-> 📌 I'm not accepting pull requests; feel free to fork.
-
 ## The story
 
 I spent weeks trying to get macOS running properly on this X270 using premade EFI but no result and eventually end up making my own. Ventura did boot, but the list of broken things never got shorter:
