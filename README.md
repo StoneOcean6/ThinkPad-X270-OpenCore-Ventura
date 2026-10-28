@@ -121,6 +121,12 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
    Also turn off **System Settings → Notifications → "Allow notifications when the display is sleeping"** and **Calendar → Settings → Alerts → "Time to leave"**. Their self-triggered wakes can leave the trackpad dead after sleep ([details](docs/TROUBLESHOOTING.md)).
 6. **Remove `-v keepsyms=1 debug=0x100`** from `boot-args` once everything works, for an Apple-logo boot.
 7. **BIOS:** follow the [Dortania Kaby Lake laptop guide](https://dortania.github.io/OpenCore-Install-Guide/config-laptop.plist/kaby-lake.html).
+8. **Optional, recommended:** stop macOS saving trackpad debug chatter to the SSD (thousands of lines per minute with VoodooRMI/VoodooInput):
+   ```bash
+   sudo mkdir -p /Library/Preferences/Logging/Subsystems
+   sudo defaults write /Library/Preferences/Logging/Subsystems/com.apple.Multitouch DEFAULT-OPTIONS '{ Level = { Enable = Default; Persist = Off; }; }'
+   ```
+   Details: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Fixes beyond a standard Dortania EFI
 
@@ -133,10 +139,11 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
 | "i" LED keeps breathing after wake | Custom [`SSDT-WAKLED`](ACPI-source/SSDT-WAKLED.dsl) + rename `_WAK→ZWAK` |
 | Only the internal battery reported | [`SSDT-BATX`](ACPI-source/SSDT-BATX.dsl) + `Notify(BAT0/BAT1)→BATX` renames |
 | Muffled headset | AppleALC layout 29 instead of 22 |
+| Laptop powers back on seconds after shutdown | [`FixShutdown-USB-SSDT`](ACPI-source/FixShutdown-USB-SSDT.dsl) + rename `_PTS→ZPTS` (turns off the USB controller's wake signal at shutdown) |
 
 Full details, with the reasoning and how each fix was verified: **[docs/CHANGELOG.md](docs/CHANGELOG.md)**. Do's and don'ts: **[docs/WHAT-WORKS.md](docs/WHAT-WORKS.md)**.
 
-Problems found later in daily use (trackpad after notification wakes, WhatsApp after sleep, Dock magnification): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
+Problems found later in daily use (trackpad after notification wakes, powering on after shutdown, slow after login, WhatsApp after sleep, Dock magnification): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
 
 ## Repository layout
 
@@ -187,7 +194,7 @@ This repo bundles work from many projects. **Each component keeps its own licens
 | ECEnabler | no license file published; © 1Revenger1 | [1Revenger1/ECEnabler](https://github.com/1Revenger1/ECEnabler) |
 | USBToolBox kext | no license file published; © USBToolBox | [USBToolBox/kext](https://github.com/USBToolBox/kext) |
 | AppleMCEReporterDisabler (plist-only kext) | © 2019 XLNC | |
-| SSDT-PLUG-DRTNIA, SSDT-EC-USBX-LAPTOP, SSDT-PNLF, SSDT-XOSI, SSDT-GPRW | from Dortania's guides (CC BY-NC-SA 4.0) | [Dortania](https://dortania.github.io) |
+| SSDT-PLUG-DRTNIA, SSDT-EC-USBX-LAPTOP, SSDT-PNLF, SSDT-XOSI, SSDT-GPRW, FixShutdown-USB-SSDT (originally by RehabMan) | from Dortania's guides (CC BY-NC-SA 4.0) | [Dortania](https://dortania.github.io) |
 | SSDT-BATX | "Copyleft (c) 2020 by bb. No rights reserved." (repo: MIT) | [benbender/x1c6-hackintosh](https://github.com/benbender/x1c6-hackintosh) |
 
 **My own work** (`config.plist`, `SSDT-WAKLED`, the `UTBMap-X270` USB map and the docs) is free to use, modify and share. Credit is appreciated but not required.

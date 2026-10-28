@@ -92,6 +92,12 @@ Hibernation, standby and Power Nap dark wakes caused half-finished wakes. Undo w
 - Result: both batteries are combined (e.g. Max 5546 / Design 6396 mAh), the % and time remaining are correct, charging shows, and it survives sleep.
 - Known: two `ACPI Exception: AE_BAD_PARAMETER` lines are logged right after the _BATX table loads. No visible effect.
 
+### 11. Laptop powering back on right after shutdown (FixShutdown-USB-SSDT)
+- Symptom: seconds after Shut Down, the laptop turned itself back on. It happened on battery and on AC, with nothing plugged into USB. Because each shutdown got interrupted, the next startup ran a longer disk check.
+- Cause: macOS doesn't tell the USB controller to stop sending its wake signal (PME) when it powers off, so the controller wakes the laptop straight back up. Windows and Linux handle this themselves.
+- Fix: ACPI→Add `FixShutdown-USB-SSDT.aml` ([source](../ACPI-source/FixShutdown-USB-SSDT.dsl); Dortania, originally RehabMan), plus ACPI→Patch "_PTS to ZPTS". The patch has Find `5F50545301`, Replace `5A50545301` and TableSignature `DSDT`, and matches only the method definition `Method(_PTS,1,NotSerialized)`, which occurs once in the X270 DSDT. The SSDT runs the original `_PTS`, then sets `\_SB.PCI0.XHC.PMEE = 0` when the system is shutting down (S5).
+- Result: it stays off after shutdown, and the log shows `Previous shutdown cause: 5` (clean). Sleep/wake is unaffected.
+
 ## Not included
 - **SD card reader (RTS522A):** RealtekCardReader v0.9.7 + RealtekCardReaderFriend v1.0.4 would be the drivers (after Lilu, driver before Friend). They're beta and officially tested only up to Monterey, and RTS5227-family readers have known timeouts on T440/T450.
 - **Fingerprint reader (138A:0097):** no macOS driver.
