@@ -1,12 +1,12 @@
 # Lenovo ThinkPad X270 – OpenCore EFI for macOS Ventura
 
-A working OpenCore EFI for the **ThinkPad X270** running **macOS Ventura 13.7.8**, with notes on every fix that went into it.
+A working OpenCore EFI for the **Core i5-7200U ThinkPad X270** running **macOS Ventura 13.7.8**, with notes on every fix that went into it.
 
 > ⚠️ **Before you boot with this EFI, generate your own SMBIOS** (see [Before you use it](#before-you-use-it)). The serial numbers in `config.plist` are placeholders, and macOS/iCloud will not work properly until you replace them.
 
 ## The story
 
-I spent weeks trying to get macOS running properly on this X270. Ventura did boot, but the list of broken things never got shorter:
+I spent weeks trying to get macOS running properly on this X270 using premade EFI but no result and eventually end up making my own. Ventura did boot, but the list of broken things never got shorter:
 - HDMI didn't work
 - the trackpad froze after pressing Fn keys, and the cursor jumped after a click-drag
 - Bluetooth was dead
@@ -16,19 +16,18 @@ I spent weeks trying to get macOS running properly on this X270. Ventura did boo
 
 Every fix I tried either did nothing or broke something else.
 
-Eventually I got fed up and tried something different: I worked through it step by step with **Claude** (Anthropic's AI assistant). We didn't guess. For each problem we:
+Eventually I got fed up and tried something different: I worked through it step by step with **Claude**. For each problem:
 - pulled the actual logs (`pmset -g log`, `ioreg`, `log show`) and looked at what macOS reported
 - checked the X270's ACPI tables
 - compared against the kext documentation
 
-Then we made **one change per reboot**, with a config backup before each one, so a bad change was always easy to undo. Along the way we found that:
+Then made **one change per reboot**, with a config backup before each one, so a bad change was always easy to undo. Along the way i found that:
 - HDMI was blocked by leftover connector patches
 - the trackpad needed VoodooPS2Trackpad *enabled* (the opposite of most guides)
-- BlueToolFixup was too old for macOS 13.4+
 - the USB-C controller (XDCI) was waking the laptop seconds after it went to sleep
-- macOS never resets the ThinkPad's wake LED
-- only the internal battery was being read
-- the audio layout was meant for a Razer Blade
+- macOS never resets the ThinkPad's wake LED (LED was breathing even after laptop fully wake up)
+- only the internal battery was being read (i have both internal and external batteries attached)
+
 
 Within a day everything on my list worked. This repo is the result. I hope it saves the next X270 owner those weeks.
 
@@ -39,12 +38,12 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
 | Component | Hardware | ID | macOS driver | Status |
 |---|---|---|---|---|
 | CPU | Intel Core i5-7200U (Kaby Lake, 2C/4T) | | XCPM via SSDT-PLUG | ✅ |
-| iGPU | Intel HD Graphics 620 | 8086:5916 | WhateverGreen, `ig-platform-id` 0x591B0000, `device-id` 0x5916 | ✅ Metal 3, 1536 MB |
+| iGPU | Intel HD Graphics 620 | 8086:5916 | WhateverGreen, `ig-platform-id` 0x591B0000, `device-id` 0x5916 | ✅ hardware acceleration, Metal 3, 1536 MB |
 | Audio codec | Realtek ALC298 | 10EC:0298 rev 0x100103 | AppleALC, `alcid=29` | ✅ speakers, combo jack, both mics |
-| HDMI | HDMI port on the iGPU | | WhateverGreen, stock connectors + `igfxonln=1` | ✅ tested with an HDMI→VGA converter |
+| HDMI | HDMI port on the iGPU | | WhateverGreen, stock connectors + `igfxonln=1` | ✅ tested with an HDMI→HDMI, HDMI→VGA converter |
 | Wi-Fi | Intel Dual Band Wireless-AC 8265 (8265NGW, M.2) | | AirportItlwm v2.3.0, Ventura build | ✅ native menu, iMessage OK |
 | Bluetooth | Intel 8265 Bluetooth (on the Wi-Fi card) | USB 8087:0A2B (port HS07) | IntelBluetoothFirmware 2.4.0 + IntelBTPatcher 2.4.0 + BlueToolFixup 2.7.2 | ✅ |
-| Touchpad + TrackPoint | Synaptics, SMBus/RMI4 capable | | VoodooRMI 1.4.3 + VoodooSMBus 3.0 + VoodooPS2 2.3.7 | ✅ gestures, TrackPoint, buttons |
+| Touchpad + TrackPoint | Synaptics, SMBus/RMI4 capable | | VoodooRMI 1.4.3 + VoodooSMBus 3.0 + VoodooPS2 2.3.7 | ✅ gestures, TrackPoint (ThinkPad nipple), buttons |
 | Keyboard | ThinkPad PS/2 keyboard | | VoodooPS2Keyboard + BrightnessKeys | ✅ Fn keys |
 | Battery | Internal + external (Power Bridge) | ACPI BAT0 + BAT1 | SMCBatteryManager + ECEnabler + SSDT-BATX | ✅ combined %, charging |
 | SSD | NVMe 256 GB (LENSE30256GMSP340) | | native + NVMeFix | ✅ |
@@ -154,6 +153,6 @@ docs/WHAT-WORKS.md   features, limits, do's and don'ts
 - [Dortania](https://dortania.github.io): guides, SSDT-PLUG / EC-USBX / PNLF / XOSI / GPRW
 - [benbender](https://github.com/benbender/x1c6-hackintosh): SSDT-BATX
 - [nicktimur/Lenovo-X270-Hackintosh-OpenCore-Sonoma](https://github.com/nicktimur/Lenovo-X270-Hackintosh-OpenCore-Sonoma): reference for the X270 graphics setup
-- [Claude](https://claude.ai) by Anthropic: troubleshooting partner for the fixes above
+- [Claude](https://claude.ai) by Anthropic: troubleshooting 
 
 Use at your own risk. Not affiliated with Apple or Lenovo.
