@@ -120,6 +120,7 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
    sudo pmset -a hibernatemode 0 standby 0 autopoweroff 0 powernap 0 proximitywake 0 tcpkeepalive 0
    ```
 5. **Turn off "Install macOS updates"** in Software Update, so you don't end up on Sonoma.
+   Also turn off **System Settings → Notifications → "Allow notifications when the display is sleeping"** and **Calendar → Settings → Alerts → "Time to leave"**. Their self-triggered wakes can leave the trackpad dead after sleep ([details](docs/TROUBLESHOOTING.md)).
 6. **Remove `-v keepsyms=1 debug=0x100`** from `boot-args` once everything works, for an Apple-logo boot.
 7. **BIOS:** follow the [Dortania Kaby Lake laptop guide](https://dortania.github.io/OpenCore-Install-Guide/config-laptop.plist/kaby-lake.html).
 
@@ -137,6 +138,8 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
 
 Full details, with the reasoning and how each fix was verified: **[docs/CHANGELOG.md](docs/CHANGELOG.md)**. Do's and don'ts: **[docs/WHAT-WORKS.md](docs/WHAT-WORKS.md)**.
 
+Problems found later in daily use (trackpad after notification wakes, WhatsApp after sleep, Dock magnification): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
+
 ## Repository layout
 
 ```
@@ -144,6 +147,7 @@ EFI/                 the OpenCore EFI (copy to your EFI partition)
 ACPI-source/         .dsl sources of the added SSDTs
 docs/CHANGELOG.md    every change, with the reasoning and how it was verified
 docs/WHAT-WORKS.md   features, limits, do's and don'ts
+docs/TROUBLESHOOTING.md   problems found in daily use, and their fixes/workarounds
 ```
 
 ## Credits
