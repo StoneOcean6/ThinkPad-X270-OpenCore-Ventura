@@ -6,7 +6,7 @@ These came up after the EFI was finished and published, during normal day-to-day
 |---|---|---|
 | 1 | [Trackpad dead after a self-triggered "notification wake"](#1-trackpad-dead-after-a-self-triggered-notification-wake) | ✅ fixed with two settings (still being watched) |
 | 2 | [Laptop turns itself back on right after shutdown](#2-laptop-turns-itself-back-on-right-after-shutdown) | ✅ solved (EFI fix) |
-| 3 | [Slow after login, typing lag, apps slow to open](#3-slow-after-login-typing-lag-apps-slow-to-open) | 🟡 mostly solved; the drive's heat is still open |
+| 3 | [Slow after login, typing lag, apps slow to open](#3-slow-after-login-typing-lag-apps-slow-to-open) | ✅ fixed (logging setting) |
 | 4 | [WhatsApp (Mac App Store) won't reconnect after sleep](#4-whatsapp-mac-app-store-wont-reconnect-after-sleep) | 🔴 under investigation, workaround available |
 
 ---
@@ -73,9 +73,6 @@ log show --last boot --style compact --predicate 'eventMessage CONTAINS "Previou
 **What the measurements showed**
 - **CPU mostly idle, but a high load average** (~3.9 on a 2-core CPU). Processes were **waiting on the disk**.
 - `iostat`: ~100 tiny writes per second (≈4.7 KB each).
-- **The SSD itself is healthy** (`smartctl`): 10% used, 100% spare, 0 media errors, SMART PASSED; `diskutil verifyVolume disk1` → all OK.
-- **But it slows down badly under many small, parallel writes.** `dd` wrote 1 GB at **10–21 MB/s** shortly after startup, versus **946 MB/s** when the system was idle.
-- **The SSD runs hot.** The controller sensor showed 68–69 °C at idle and **75 °C** after a single 1 GB write; the drive's own warning threshold is 70 °C.
 - `log show … | sort | uniq -c` showed the system log being flooded:
   - **WindowServer, ~18,700 lines in 5 min:** almost all `[com.apple.Multitouch:Plugin] … dispatchEvent Dispatching event with N children`, one line per trackpad update (VoodooInput presents the trackpad to macOS as an Apple trackpad).
 - Background indexing (Spotlight: `mds`, `mdbulkimport`) adds to the load in the first days after setup.
@@ -91,10 +88,8 @@ log show --last boot --style compact --predicate 'eventMessage CONTAINS "Previou
    - Result: `logd` disk writes roughly halved (68 per 5 s → 61 per 10 s) while using the trackpad.
    - Note that `log show` still counts these lines, because it includes messages held in memory. Check `fs_usage … logd` instead.
    - Undo: `sudo rm /Library/Preferences/Logging/Subsystems/com.apple.Multitouch.plist`
-2. **Keep login light:** check System Settings → General → Login Items (both lists) and switch off background items you don't need at startup. Every extra item competes for this SSD right after login.
+2. **Keep login light:** check System Settings → General → Login Items (both lists) and switch off background items you don't need at startup. Every extra item competes for the disk right after login.
 3. **Let Spotlight finish its first index**, plugged in and awake: `caffeinate -i -t 7200`.
-
-**Still open:** **SSD cooling.** Check for, or add, a thermal pad between the SSD and the chassis. Under longer writes the controller passes its 70 °C warning level and throttles.
 
 **Useful checks**
 ```bash
@@ -104,7 +99,6 @@ iostat -d -c 3 -w 1 disk0 | tail -1                              # disk activity
 sudo fs_usage -w -f diskio -t 5 2>/dev/null | awk '{print $NF}' | sed 's/\.[0-9]*$//' | sort | uniq -c | sort -rn | head   # who uses the disk
 log show --last 5m --style compact 2>/dev/null | awk '{print $4}' | sed 's/\[.*//' | sort | uniq -c | sort -rn | head      # who floods the log
 ```
-SSD health needs smartmontools: Homebrew no longer installs on this Intel/Ventura setup, so use the `.dmg` from smartmontools' SourceForge page, then run `sudo /usr/local/sbin/smartctl -a disk0`.
 
 ---
 
