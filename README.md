@@ -140,10 +140,11 @@ This EFI was built and tested on exactly this hardware. Other X270 configuration
 | Only the internal battery reported | [`SSDT-BATX`](ACPI-source/SSDT-BATX.dsl) + `Notify(BAT0/BAT1)→BATX` renames |
 | Muffled headset | AppleALC layout 29 instead of 22 |
 | Laptop powers back on seconds after shutdown | [`FixShutdown-USB-SSDT`](ACPI-source/FixShutdown-USB-SSDT.dsl) + rename `_PTS→ZPTS` (turns off the USB controller's wake signal at shutdown) |
+| Minutes of lag after every startup (some NVMe drives, incl. the one in the hardware table) | `SetApfsTrimTimeout = 0` + optional [monthly TRIM scheduler](scripts/trim-scheduler/). Not applied by default, check first: [details](docs/TROUBLESHOOTING.md#3-slow-first-minutes-after-startup-late-login-typing-lag-slow-apps) |
 
 Full details, with the reasoning and how each fix was verified: **[docs/CHANGELOG.md](docs/CHANGELOG.md)**. Do's and don'ts: **[docs/WHAT-WORKS.md](docs/WHAT-WORKS.md)**.
 
-Problems found later in daily use (trackpad after notification wakes, powering on after shutdown, slow after login, WhatsApp after sleep): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
+Problems found later in daily use (trackpad after notification wakes, powering on after shutdown, slow first minutes after startup, WhatsApp after sleep): **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
 
 ## Repository layout
 
@@ -153,6 +154,7 @@ ACPI-source/         .dsl sources of the added SSDTs
 docs/CHANGELOG.md    every change, with the reasoning and how it was verified
 docs/WHAT-WORKS.md   features, limits, do's and don'ts
 docs/TROUBLESHOOTING.md   problems found in daily use, and their fixes/workarounds
+scripts/trim-scheduler/   optional monthly TRIM for drives that lag after boot-time TRIM
 ```
 
 ## Credits
@@ -197,6 +199,6 @@ This repo bundles work from many projects. **Each component keeps its own licens
 | SSDT-PLUG-DRTNIA, SSDT-EC-USBX-LAPTOP, SSDT-PNLF, SSDT-XOSI, SSDT-GPRW, FixShutdown-USB-SSDT (originally by RehabMan) | from Dortania's guides (CC BY-NC-SA 4.0) | [Dortania](https://dortania.github.io) |
 | SSDT-BATX | "Copyleft (c) 2020 by bb. No rights reserved." (repo: MIT) | [benbender/x1c6-hackintosh](https://github.com/benbender/x1c6-hackintosh) |
 
-**My own work** (`config.plist`, `SSDT-WAKLED`, the `UTBMap-X270` USB map and the docs) is free to use, modify and share. Credit is appreciated but not required.
+**My own work** (`config.plist`, `SSDT-WAKLED`, the `UTBMap-X270` USB map, the TRIM scheduler and the docs) is free to use, modify and share. Credit is appreciated but not required.
 
 Use at your own risk. Not affiliated with Apple or Lenovo.

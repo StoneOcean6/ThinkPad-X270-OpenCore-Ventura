@@ -6,7 +6,7 @@ These came up after the EFI was finished and published, during normal day-to-day
 |---|---|---|
 | 1 | [Trackpad dead after a self-triggered "notification wake"](#1-trackpad-dead-after-a-self-triggered-notification-wake) | ✅ fixed with two settings (still being watched) |
 | 2 | [Laptop turns itself back on right after shutdown](#2-laptop-turns-itself-back-on-right-after-shutdown) | ✅ solved (EFI fix) |
-| 3 | [Slow after login, typing lag, apps slow to open](#3-slow-after-login-typing-lag-apps-slow-to-open) | ✅ fixed (logging setting) |
+| 3 | [Slow first minutes after startup: late login, typing lag, slow apps](#3-slow-first-minutes-after-startup-late-login-typing-lag-slow-apps) | ✅ fixed (boot-time TRIM off + monthly TRIM) |
 | 4 | [WhatsApp (Mac App Store) won't reconnect after sleep](#4-whatsapp-mac-app-store-wont-reconnect-after-sleep) | 🔴 under investigation, workaround available |
 
 ---
@@ -62,34 +62,54 @@ log show --last boot --style compact --predicate 'eventMessage CONTAINS "SSDT"' 
 log show --last boot --style compact --predicate 'eventMessage CONTAINS "Previous shutdown cause"'  # 5 = clean shutdown
 ```
 
-**Result:** it stays off after shutdown, the shutdown cause is `5` (clean), and the kernel-to-login-screen time is back to about 20 s.
+**Result:** it stays off after shutdown, the shutdown cause is `5` (clean).
 
 ---
 
-## 3. Slow after login, typing lag, apps slow to open
+## 3. Slow first minutes after startup: late login, typing lag, slow apps
 
-**Symptom:** the first minutes after login were very slow: apps took a long time to open, and at times even typing lagged. Startup up to the login screen was normal (about 20 s from kernel start to the login window).
+**Symptom**
+- After every startup or restart (not after wake from sleep), the login screen takes much longer than it should.
+- At the login screen the cursor spins and typed characters appear seconds later, all at once.
+- For several minutes after login, apps take a very long time to open.
+- Then everything is normal until the next startup.
 
-**What the measurements showed**
-- **CPU mostly idle, but a high load average** (~3.9 on a 2-core CPU). Processes were **waiting on the disk**.
-- `iostat`: ~100 tiny writes per second (≈4.7 KB each).
-- `log show … | sort | uniq -c` showed the system log being flooded:
-  - **WindowServer, ~18,700 lines in 5 min:** almost all `[com.apple.Multitouch:Plugin] … dispatchEvent Dispatching event with N children`, one line per trackpad update (VoodooInput presents the trackpad to macOS as an Apple trackpad).
-- Background indexing (Spotlight: `mds`, `mdbulkimport`) adds to the load in the first days after setup.
+**What the logs showed**
+- **CPU mostly idle, but a high load average.** Processes were **waiting on the disk**.
+- **APFS saves stalling.** The kernel logs `tx_flush: disk1 tx … took N us to flush` for **1 to over 30 seconds** per save, for about 7 minutes after each startup. A normal flush takes milliseconds.
+- **The disk is fine otherwise.** SMART was healthy, it was never over its temperature limits, swap was 0, the disk wasn't full, a whole startup wrote only ~200 MB, and it was fast when idle.
+- **The trigger is TRIM at mount.** APFS TRIMs **all free space** every time the disk is mounted (`spaceman_scan_free_blocks: … trims took …`). Some NVMe drives acknowledge this immediately but then process it in the background, and stall writes until they're done.
+  - The stalls start seconds after that TRIM.
+  - With TRIM skipped at boot (`SetApfsTrimTimeout = 0`), the same laptop had **zero** stalled saves and normal app launches.
+- The Lenovo/UMIS 256 GB drive listed in the hardware table behaves like this. Other drives may not; [others report the same](https://www.hackintosh-forum.de/forum/thread/56069-monterey-bootet-pl%C3%B6tzlich-sehr-langsam/) on other NVMe models.
 
-**Fixes applied**
-1. **Stop saving trackpad debug chatter to the SSD.** It's useless noise. The trackpad and its driver logs are unaffected.
+**Check whether your drive does it.** Run these about 10 minutes after a startup:
+```bash
+log show --last boot --style compact --predicate 'eventMessage CONTAINS "to flush"' | grep -E -c 'took [0-9]{7,} us'   # saves that took over 1 s
+log show --last boot --style compact --predicate 'eventMessage CONTAINS "spaceman_scan"' | tail -3                      # did TRIM run at boot?
+```
+Dozens of slow saves right after a TRIM at boot points to this problem. A handful, or none, means your drive is fine: keep the default.
+
+**Fix**
+1. **Skip TRIM at boot:** in `config.plist`, set `Kernel → Quirks → SetApfsTrimTimeout` to `0` (default `-1`). Since macOS 12 the only choices are full TRIM at boot (`-1`) or none (`0`). System Information still says "TRIM Support: Yes" with `0`, but that's wrong.
+   - **Trade-off:** without TRIM, some SSDs slowly lose write speed over months. It doesn't affect free space or your files.
+2. **Give the drive a TRIM once a month, automatically:** the [monthly TRIM scheduler](../scripts/trim-scheduler/) keeps `0` and lets one startup every 30 days run TRIM. It notifies you before that slower restart.
+3. **No EFI change:** keep `-1` and mostly use sleep instead of shutting down. TRIM only runs at startup.
+
+**This EFI ships with `-1`** (macOS default), because most drives don't need this.
+
+**Also worth doing (smaller effect)**
+1. **Stop saving trackpad debug chatter to the SSD.** With VoodooInput, WindowServer logs `[com.apple.Multitouch:Plugin] … dispatchEvent` for every trackpad update (thousands of lines per minute). The trackpad and its driver logs are unaffected.
    ```bash
    sudo mkdir -p /Library/Preferences/Logging/Subsystems
    sudo defaults write /Library/Preferences/Logging/Subsystems/com.apple.Multitouch DEFAULT-OPTIONS '{ Level = { Enable = Default; Persist = Off; }; }'
    sudo log config --subsystem com.apple.Multitouch --mode "persist:off"     # apply now, without a reboot
    sudo log config --status --subsystem com.apple.Multitouch                 # → DEFAULT PERSIST_OFF
    ```
-   - Result: `logd` disk writes roughly halved (68 per 5 s → 61 per 10 s) while using the trackpad.
-   - Note that `log show` still counts these lines, because it includes messages held in memory. Check `fs_usage … logd` instead.
+   - `log show` still counts these lines, because it includes messages held in memory. Check `fs_usage … logd` instead.
    - Undo: `sudo rm /Library/Preferences/Logging/Subsystems/com.apple.Multitouch.plist`
-2. **Keep login light:** check System Settings → General → Login Items (both lists) and switch off background items you don't need at startup. Every extra item competes for the disk right after login.
-3. **Let Spotlight finish its first index**, plugged in and awake: `caffeinate -i -t 7200`.
+2. **Keep login light:** in System Settings → General → Login Items (both lists), switch off background items you don't need at startup.
+3. **Let Spotlight finish its first index** after setup, plugged in and awake: `caffeinate -i -t 7200`.
 
 **Useful checks**
 ```bash
