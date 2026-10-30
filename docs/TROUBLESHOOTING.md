@@ -7,7 +7,6 @@ These came up after the EFI was finished and published, during normal day-to-day
 | 1 | [Trackpad dead after a self-triggered "notification wake"](#1-trackpad-dead-after-a-self-triggered-notification-wake) | ✅ fixed with two settings (still being watched) |
 | 2 | [Laptop turns itself back on right after shutdown](#2-laptop-turns-itself-back-on-right-after-shutdown) | ✅ solved (EFI fix) |
 | 3 | [Slow first minutes after startup: late login, typing lag, slow apps](#3-slow-first-minutes-after-startup-late-login-typing-lag-slow-apps) | ✅ fixed (boot-time TRIM off + monthly TRIM) |
-| 4 | [WhatsApp (Mac App Store) won't reconnect after sleep](#4-whatsapp-mac-app-store-wont-reconnect-after-sleep) | 🔴 under investigation, workaround available |
 
 ---
 
@@ -119,41 +118,3 @@ iostat -d -c 3 -w 1 disk0 | tail -1                              # disk activity
 sudo fs_usage -w -f diskio -t 5 2>/dev/null | awk '{print $NF}' | sed 's/\.[0-9]*$//' | sort | uniq -c | sort -rn | head   # who uses the disk
 log show --last 5m --style compact 2>/dev/null | awk '{print $4}' | sed 's/\[.*//' | sort | uniq -c | sort -rn | head      # who floods the log
 ```
-
----
-
-## 4. WhatsApp (Mac App Store) won't reconnect after sleep
-
-**Symptom**
-- After waking, WhatsApp stays on "Connecting…".
-- Waiting, turning Wi-Fi off and on, or quitting and reopening WhatsApp (⌘Q) doesn't help.
-- **A full restart of the laptop fixes it.**
-
-**What was ruled out**
-- The network itself: `scutil --nwi` shows Wi-Fi (`en1`) reachable on IPv4 and IPv6, and `curl -4` / `curl -6` to `https://web.whatsapp.com` both return `200`.
-- Safari and iMessage work normally after wake.
-- `tcpkeepalive` stays **off** on purpose: turning it on brings back background wakes.
-
-**Theory:** something WhatsApp depends on (but Safari and iMessage don't) gets stuck after a wake, and only a reboot clears it. Not confirmed yet. 
-
-**Next time it happens, before restarting:**
-
-1. Collect information (this only reads):
-   ```bash
-   pgrep -lf -i whatsapp
-   nc -vz -G 5 g.whatsapp.net 443
-   nc -vz -G 5 g.whatsapp.net 5222
-   log show --last 10m --style compact --predicate 'process CONTAINS[c] "whatsapp"' | tail -40
-   ```
-2. Then try these one at a time, checking WhatsApp after each:
-   ```bash
-   sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
-   ```
-   ```bash
-   killall WhatsApp; sleep 2; open -a WhatsApp
-   ```
-   ```bash
-   sudo killall nsurlsessiond networkserviceproxy
-   ```
-
-**Workaround:** restart the laptop. WhatsApp Web in Chrome is also unaffected.
